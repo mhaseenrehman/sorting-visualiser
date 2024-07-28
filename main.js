@@ -8,7 +8,6 @@ let maxNum = 100;
 let numOfBars = 400;
 let numbers = new Array();
 
-
 randomizeButton.onclick = createRandomNumbers
 sortButton.onclick = initialiseSort
 
@@ -23,19 +22,9 @@ function createRandomNumbers() {
     }
 }
 
-// var globalID;
-
-// function animateInitialBars(i, height, bar) {
-//     if (height > numbers[i]) {
-//         cancelAnimationFrame(globalID);
-//     } else {
-//         height+=1;
-//         bar.style.height = height + "px";
-//         globalID = requestAnimationFrame(function() {
-//             animateInitialBars(i, height, bar)
-//         });
-//     }
-// }
+async function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
 
 function renderBars() {
     for (let i = 0; i < numOfBars; i++) {
@@ -43,27 +32,7 @@ function renderBars() {
         bar.classList.add("bar");
         bar.style.height = numbers[i]+"px";
         middleContainer.appendChild(bar);
-        // animateInitialBars(i, 0, bar);
     }
-}
-
-document.addEventListener("DOMContentLoaded", function() {
-    createRandomNumbers();
-    renderBars(numbers);
-});
-
-async function initialiseSort() {
-    if (sortingAlgorithm.value == "quick-sort") {
-        await quickSort(numbers, 0, numOfBars-1);
-    } else if (sortingAlgorithm.value == "merge-sort") {
-    } else if (sortingAlgorithm.value == "bubble-sort") {
-        bubbleSort(numbers)
-    } else if (sortingAlgorithm.value == "insertion-sort") {
-    }
-}
-
-async function sleep(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 // Quick Sort Algorithm
@@ -121,9 +90,96 @@ async function quickSort(array, lo, hi) {
 
 
 // Merge Sort Algorithm
-function mergeSort() {
+async function merge(array, left, middle, right) {
+    var bars = document.getElementsByClassName("bar");
 
+    let leftArray = [];
+    let rightArray = [];
+
+    let n1 = middle - left + 1;
+    let n2 = right - middle;
+
+    for (let i = 0; i < n1; i++) {
+        leftArray.push(array[left+i]);
+    }
+
+    for (let j = 0; j < n2; j++) {
+        rightArray.push(array[middle+1+j]);
+    }
+
+    let i = 0;
+    let j = 0;
+    let k = left;
+
+    while (i < n1 && j < n2) {
+        for (let i = 0; i < numOfBars; i++) {
+            bars[i].style.backgroundColor = "white";
+        }
+
+        if (leftArray[i] <= rightArray[j]) {
+            array[k] = leftArray[i];
+            bars[k].style.height = array[k]+"px";
+            bars[k].style.backgroundColor = "red";
+            i++
+        }
+        else {
+            array[k] = rightArray[j];
+            bars[k].style.height = array[k]+"px";
+            bars[k].style.backgroundColor = "red";
+            j++
+        }
+        k++;
+
+        await sleep(10);
+    }
+
+    while (i < n1) {
+        for (let i = 0; i < numOfBars; i++) {
+            bars[i].style.backgroundColor = "white";
+        }
+
+        array[k] = leftArray[i];
+        bars[k].style.height = array[k]+"px";
+        bars[k].style.backgroundColor = "red";
+        i++;
+        k++;
+
+        await sleep(10);
+    }
+
+    while (j < n2) {
+        for (let i = 0; i < numOfBars; i++) {
+            bars[i].style.backgroundColor = "white";
+        }
+
+        array[k] = rightArray[j];
+        bars[k].style.height = array[k]+"px";
+        bars[k].style.backgroundColor = "red";
+        j++;
+        k++;
+
+        await sleep(10);
+    }
 }
+
+async function mergeSort(array, left, right) {
+    if (right - left < 1) {
+        var bars = document.getElementsByClassName("bar");
+        for (let i = 0; i < numOfBars; i++) {
+            bars[i].style.backgroundColor = "white";
+        }
+        return;
+    }
+
+    let middle = Math.floor((left+right)/2);
+    await Promise.all([
+        mergeSort(array, left, middle),
+        mergeSort(array, middle+1, right)
+    ]);
+
+    await merge(array, left, middle, right);
+}
+
 
 // Bubble Sort Algorithm
 async function bubbleSort(array) {
@@ -151,8 +207,46 @@ async function bubbleSort(array) {
 }
 
 // Insertion Sort Algorithm
-function insertionSort() {
-    
+async function insertionSort(array) {
+    let bars = document.getElementsByClassName("bar");
+
+    let i = 1;
+
+    while (i < array.length) {
+        let x = array[i];
+        let j = i;
+
+        while (j > 0 && array[j-1] > x) {
+            array[j] = array[j-1];
+            j--;
+
+            bars[j].style.height = array[j]+"px";
+            bars[j].style.backgroundColor = "lightgreen";
+
+            await sleep(30);
+
+            for (let k = 0; k < bars.length; k++) {
+                if (k !== j && k !== j+1) {
+                    bars[k].style.backgroundColor = "white";
+                }
+            }
+        }
+
+        array[j] = x;
+        i++;
+    }
+}
+
+async function initialiseSort() {
+    if (sortingAlgorithm.value == "quick-sort") {
+        await quickSort(numbers, 0, numOfBars-1);
+    } else if (sortingAlgorithm.value == "merge-sort") {
+        await mergeSort(numbers, 0, numOfBars-1);
+    } else if (sortingAlgorithm.value == "bubble-sort") {
+        await bubbleSort(numbers)
+    } else if (sortingAlgorithm.value == "insertion-sort") {
+        await insertionSort(numbers);
+    }
 }
 
 randomizeButton.addEventListener("click", function () {
@@ -162,10 +256,15 @@ randomizeButton.addEventListener("click", function () {
 });
 
 sortButton.addEventListener("click", async function() {
-    initialiseSort();
+    await initialiseSort();
 });
 
 checkButton.addEventListener("click", function() {
     const isSorted = arr => arr.every((v,i,a) => !i || a[i-1] <= v);
     console.log(isSorted(numbers));
+});
+
+document.addEventListener("DOMContentLoaded", function() {
+    createRandomNumbers();
+    renderBars(numbers);
 });
